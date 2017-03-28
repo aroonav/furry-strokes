@@ -1,9 +1,26 @@
 """
-==================================================
-==================================================
+=================================
+SVM Models for keystroke dynamics
+=================================
+
+Implementation and comaprison of performance of four SVM classifiers(1 is
+ ``LinearSVC()`` and the others are ``SVC()``).
+
+The linear models ``LinearSVC()`` and ``SVC(kernel='linear')`` yield slightly
+different results. This can be a consequence of the following differences:
+
+- ``LinearSVC`` minimizes the squared hinge loss while ``SVC`` minimizes the
+  regular hinge loss.
+- ``LinearSVC`` uses the One-vs-All (also known as One-vs-Rest) multiclass
+  reduction while ``SVC`` uses the One-vs-One multiclass reduction.
+
+We consider all the 31 features for classification. For more details about
+the dataset in DSL-StrongPasswordData.csv, goto: http://www.cs.cmu.edu/~keystroke/
+
+These features are used to train and test SVM models for classifying users on
+the basis of the timings between their keystrokes.
 """
-# TODO: Update documentation
-# print(__doc__)
+print(__doc__)
 
 import os
 import numpy as np
@@ -103,10 +120,12 @@ svc = svm.SVC(kernel='linear', C=C).fit(X, y)
 rbf_svc = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X, y)
 poly_svc = svm.SVC(kernel='poly', degree=3, C=C).fit(X, y)
 lin_svc = svm.LinearSVC(C=C).fit(X, y)
+nu_svc = svm.NuSVC().fit(X, y) 
 
-
-for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc)):
-	if(i!=1):
+for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc, nu_svc)):
+	if(i==4):
+		print "Testing with the RBF kernel in svm.NuSVC now."
+	elif(i!=1):
 		print "Testing with the", clf.kernel, "classsifier now."
 	else:
 		print "Testing with the linearSVC classsifier now."	
