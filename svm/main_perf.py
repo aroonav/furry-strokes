@@ -24,7 +24,7 @@ print(__doc__)
 
 import os
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import csv
 from sklearn import svm
 
@@ -97,7 +97,7 @@ noOfTotalVectors = 400
 noOfTrainingVectors = 250
 # For testing purposes for one class use first `noOfTestingVectors` vectors.
 # noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
-noOfTestingVectors = 150
+noOfTestingVectors = 100
 # Each vector contains `noOfFeatures` features.
 noOfFeatures = 31
 # This contains the no of classifiers defined below
@@ -108,37 +108,56 @@ datasetPath = datasetPath + os.sep + "DSL-StrongPasswordData.csv"
 
 # X: We take all the features. Or we can take only some features here by slicing.
 # y: This contains the actual classes for each training vector i.e the target.
-X,y = load_trainingData()
-test_X,test_y = load_testingData()
 
-# print X,y,"\n"
-# print "\n"
-# print test_X,test_y,"\n"
+max_training = 0
+max_scores = []
+max_perf_classifiers = [0]*5
+max_perf_trainingData = [0]*5
+
+trainingData_start = 2
+trainingData_end = 350
+performanceMat = [[0 for x in range(trainingData_end-trainingData_start)] for x in range(5)]
+
+# Iterate over the all possible amounts of training vectors.
+for x in xrange(trainingData_start, trainingData_end):
+	noOfTrainingVectors = x
+	noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
+	X,y = load_trainingData()
+	test_X,test_y = load_testingData()
+
+	# we create instances of SVM and fit our data.
+	C = 1.0  # SVM regularization parameter
+	svc = svm.SVC(kernel='linear', C=C).fit(X, y)
+	lin_svc = svm.LinearSVC(C=C).fit(X, y)
+	rbf_svc = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X, y)
+	poly_svc = svm.SVC(kernel='poly', degree=3, C=C).fit(X, y)
+	nu_svc = svm.NuSVC().fit(X, y) 
+
+	for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc, nu_svc)):
+		# Pass testing data to the classifier
+		Z = clf.predict(test_X)
+		similar = 0
+		for j in xrange(0, noOfTestingVectors*noOfTotalClasses):
+			if Z[j]==test_y[j]:
+				similar+=1
+		score = (similar/float(noOfTestingVectors*noOfTotalClasses))
+		performanceMat[i][x-trainingData_start] = score
+		if max_perf_classifiers[i]<score:
+			max_perf_classifiers[i] = score
+			max_perf_trainingData[i] = noOfTrainingVectors
 
 
-# we create instances of SVM and fit our data.
-C = 1.0  # SVM regularization parameter
-svc = svm.SVC(kernel='linear', C=C).fit(X, y)
-lin_svc = svm.LinearSVC(C=C).fit(X, y)
-rbf_svc = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X, y)
-poly_svc = svm.SVC(kernel='poly', degree=3, C=C).fit(X, y)
-nu_svc = svm.NuSVC().fit(X, y) 
+# Measure 1: Maximum performance of the model over the given training size defined by trainingData_start and trainingData_end
+print "Maximum accuracy(from 0 to 1) of the 5 classifiers is: ", max_perf_classifiers
+print "Maximum accuracy is attained for training size: ", max_perf_trainingData
+print ""
 
-for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc, nu_svc)):
-	if(i==4):
-		print "Testing with the RBF kernel in svm.NuSVC now."
-	elif(i!=1):
-		print "Testing with the", clf.kernel, "classsifier now."
-	else:
-		print "Testing with the linearSVC classsifier now."	
-	# Pass testing data to the classifier
-	Z = clf.predict(test_X)
-	# print Z
-	similar = 0
-	for j in xrange(0, noOfTestingVectors*noOfTotalClasses):
-		# print j, Z[j], test_y[j]
-		if Z[j]==test_y[j]:
-			similar+=1
-	score = (similar/float(noOfTestingVectors*noOfTotalClasses))*100
-	print "Performance of classifier:", score,"%"
-	print ""
+# Measure 2:
+labels = ['SVC(linear)', 'LinearSVC', 'SVC(rbf)', 'SVC(poly)', 'NuSVC(rbf)']
+for x in xrange(0, 5):
+	plt.plot(range(trainingData_start, trainingData_end), performanceMat[x], label=labels[x])
+legend = plt.legend(loc = 'upper left', shadow=True, fontsize='x-large')
+legend.get_frame()
+plt.xlabel("Training size")
+plt.ylabel("Accuracy(0.0-1.0)")
+plt.show()
