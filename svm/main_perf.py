@@ -115,7 +115,7 @@ max_perf_classifiers = [0]*5
 max_perf_trainingData = [0]*5
 
 trainingData_start = 2
-trainingData_end = 350
+trainingData_end = 20
 performanceMat = [[0 for x in range(trainingData_end-trainingData_start)] for x in range(5)]
 
 # Iterate over the all possible amounts of training vectors.
@@ -147,17 +147,28 @@ for x in xrange(trainingData_start, trainingData_end):
 			max_perf_trainingData[i] = noOfTrainingVectors
 
 
-# Measure 1: Maximum performance of the model over the given training size defined by trainingData_start and trainingData_end
+# Measure 1: Maximum accuracy of the model over the given training size defined by trainingData_start and trainingData_end
 print "Maximum accuracy(from 0 to 1) of the 5 classifiers is: ", max_perf_classifiers
-print "Maximum accuracy is attained for training size: ", max_perf_trainingData
-print ""
+print "Maximum accuracy is attained for training size: ", max_perf_trainingData, "\n"
 
-# Measure 2:
+# Measure 2: Plot the performance vs training size. Scatter plot the maximum (accuracy, training size) points of each classifier
 labels = ['SVC(linear)', 'LinearSVC', 'SVC(rbf)', 'SVC(poly)', 'NuSVC(rbf)']
 for x in xrange(0, 5):
 	plt.plot(range(trainingData_start, trainingData_end), performanceMat[x], label=labels[x])
-legend = plt.legend(loc = 'upper left', shadow=True, fontsize='x-large')
+
+	# Plot the maximum accuracy points
+plt.scatter(max_perf_trainingData, max_perf_classifiers)
+	# Annotate the maximum accuracy points
+for i in xrange(0, 5):
+	pt_label = "(" + str(max_perf_trainingData[i]) + "," + "{0:.3f}".format(max_perf_classifiers[i]) + ")"
+	plt.annotate(pt_label, xy=(max_perf_trainingData[i], max_perf_classifiers[i]), xytext=(4,4), textcoords='offset points', fontsize='x-small')
+#TODO: Point annotations are overlapping. Correct it.
+legend = plt.legend(loc = 'upper left', shadow=True, fontsize=8)
 legend.get_frame()
+plt.title("Graph 1: Accuracy vs Training size")
 plt.xlabel("Training size")
 plt.ylabel("Accuracy(0.0-1.0)")
 plt.show()
+
+# Measure 3: Plot the confusion matrix for this classifier
+# Measure 4: Plot the performance of each classifier for higher no. of classes when training size is set at the point of maximum accuracy for 3 classes.
