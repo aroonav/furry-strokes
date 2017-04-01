@@ -77,13 +77,28 @@ def plot_confusion_matrix(cm, classes,
 		plt.ylabel('True class')
 		plt.xlabel('Predicted class')
 
+def getClassNames():
+	"""
+	This retrieves the names of the subjects/classes
+	"""
+	class_names = []
+	file = open(datasetPath)
+	reader = csv.reader(file)
+	reader.next()
+	for i in range(noOfTotalClasses):
+		tempData = reader.next()					# Read one vector
+		currentSubject = tempData[0]			# Save subject's name
+		class_names.append(currentSubject)
+		for j in range(noOfTotalVectors-1):
+			reader.next()			# Discard one vector
+	return class_names
+
 def load_trainingData():
 	"""
 	This reads file DSL-StrongPasswordData.csv and returns the training data in
 	an ndarray of shape noOfTrainingVectors*noOfFeatures and target ndarray
 	of shape (noOfTrainingVectors*noOfTotalClasses)*1.
 	"""
-	global datasetPath
 	dataset = np.empty([0,noOfFeatures])
 	target = np.empty(0)
 	file = open(datasetPath)
@@ -117,7 +132,6 @@ def load_testingData():
 	an ndarray of shape noOfTestingVectors*noOfFeatures and target ndarray
 	of shape (noOfTestingVectors*noOfTotalClasses)*1.
 	"""
-	global datasetPath
 	dataset = np.empty([0,noOfFeatures])
 	target = np.empty(0)
 	file = open(datasetPath)
@@ -220,9 +234,7 @@ performanceMat = [[0 for x in range(noOfTrainingVectors)] for x in range(5)]
 # max_Z contains the predicted values when the accuracy is maximum
 max_Z = [[0 for x in range(noOfTestingVectors)] for x in range(5)]
 max_test_y = [[0 for x in range(noOfTestingVectors)] for x in range(5)]
-# TODO: Automate this
-class_names = ['s002', 's003', 's004']
-
+class_names = getClassNames()
 
 # Iterate over the all possible amounts of training vectors.
 for x in xrange(trainingData_start, trainingData_end):
