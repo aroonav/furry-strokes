@@ -93,11 +93,11 @@ def getClassNames():
 			reader.next()			# Discard one vector
 	return class_names
 
-def load_trainingData():
+def load_trainingData(tempTrainingVectors, tempTestingVectors):
 	"""
 	This reads file DSL-StrongPasswordData.csv and returns the training data in
-	an ndarray of shape noOfTrainingVectors*noOfFeatures and target ndarray
-	of shape (noOfTrainingVectors*noOfTotalClasses)*1.
+	an ndarray of shape tempTrainingVectors*noOfFeatures and target ndarray
+	of shape (tempTrainingVectors*noOfTotalClasses)*1.
 	"""
 	dataset = np.empty([0,noOfFeatures])
 	target = np.empty(0)
@@ -109,7 +109,7 @@ def load_trainingData():
 		# 	for j in range(noOfTotalVectors):
 		# 		tempData = reader.next()						# Discard one vector
 		# 	continue
-		for j in range(noOfTrainingVectors):
+		for j in range(tempTrainingVectors):
 			tempData = reader.next()					# Read one vector
 			currentSubject = tempData[0]			# Save subject's name
 			for k in range(3):								# Discard first 3 values
@@ -118,19 +118,19 @@ def load_trainingData():
 			tempData = np.array(tempData, ndmin=2)
 			dataset = np.append(dataset, tempData, axis=0)
 			target  = np.append(target, [currentSubject], axis=0)
-		for j in range(noOfTestingVectors):	# Discard testing vectors for now
+		for j in range(tempTestingVectors):	# Discard testing vectors for now
 			tempData = reader.next()					# Discard one vector
 		# Discard the rest of the unused vectors now
-		for j in range(noOfTotalVectors - noOfTrainingVectors - noOfTestingVectors):
+		for j in range(noOfTotalVectors - tempTrainingVectors - tempTestingVectors):
 			tempData = reader.next()						# Discard one vector
 	return dataset,target
 
-def load_testingData():
+def load_testingData(tempTrainingVectors, tempTestingVectors):
 	"""
 	TODO: Merge load_testingData() and load_trainingData() functions
 	This reads file DSL-StrongPasswordData.csv and returns the testing data in
-	an ndarray of shape noOfTestingVectors*noOfFeatures and target ndarray
-	of shape (noOfTestingVectors*noOfTotalClasses)*1.
+	an ndarray of shape tempTestingVectors*noOfFeatures and target ndarray
+	of shape (tempTestingVectors*noOfTotalClasses)*1.
 	"""
 	dataset = np.empty([0,noOfFeatures])
 	target = np.empty(0)
@@ -142,9 +142,9 @@ def load_testingData():
 		# 	for j in range(noOfTotalVectors):
 		# 		tempData = reader.next()						# Discard one vector
 		# 	continue
-		for j in range(noOfTrainingVectors):	# Discard training vectors now
+		for j in range(tempTrainingVectors):	# Discard training vectors now
 			tempData = reader.next()						# Discard one vector
-		for j in range(noOfTestingVectors):
+		for j in range(tempTestingVectors):
 			tempData = reader.next()						# Read one vector
 			currentSubject = tempData[0]				# Save subject's name
 			for k in range(3):									# Discard first 3 values
@@ -154,7 +154,7 @@ def load_testingData():
 			dataset = np.append(dataset, tempData, axis=0)
 			target = np.append(target, [currentSubject], axis=0)
 		# Discard the rest of the unused vectors now
-		for j in range(noOfTotalVectors - noOfTrainingVectors - noOfTestingVectors):
+		for j in range(noOfTotalVectors - tempTrainingVectors - tempTestingVectors):
 			tempData = reader.next()						# Discard one vector
 	return dataset,target
 
@@ -203,6 +203,43 @@ def showCnfValues():
 	print bcolors.ENDC,
 	print row_format2.format(*(total[6:])),
 
+def trainAndTest(C):
+	# C is the SVM regularization parameter
+	# Training phase
+	# Iterate over the all possible amounts of training vectors.
+	global performanceMat, max_perf_classifiers, max_perf_trainingData, max_Z, max_test_y
+	# Iterate over the all possible amounts of training vectors.
+	for x in xrange(trainingData_start, trainingData_end):
+		tempTrainingVectors = x
+		tempTestingVectors = noOfTotalVectors - tempTrainingVectors
+		# X: We take all the features. Or we can take only some features here by slicing.
+		# y: This contains the actual classes for each training vector i.e the target.
+		X,y = load_trainingData(tempTrainingVectors, tempTestingVectors)
+		test_X,test_y = load_testingData(tempTrainingVectors, tempTestingVectors)
+
+		# we create instances of SVM and fit our data.
+		svc = svm.SVC(kernel='linear', C=C).fit(X, y)
+		lin_svc = svm.LinearSVC(C=C).fit(X, y)
+		rbf_svc = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X, y)
+		poly_svc = svm.SVC(kernel='poly', degree=3, C=C).fit(X, y)
+		nu_svc = svm.NuSVC().fit(X, y) 
+
+		for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc, nu_svc)):
+			# Pass testing data to the classifier
+			Z = clf.predict(test_X)
+			similar = 0
+			for j in xrange(0, tempTestingVectors*noOfTotalClasses):
+				if Z[j]==test_y[j]:
+					similar+=1
+			score = (similar/float(tempTestingVectors*noOfTotalClasses))
+			performanceMat[i][x-trainingData_start] = score
+			if max_perf_classifiers[i]<score:
+				max_perf_classifiers[i] = score
+				max_perf_trainingData[i] = tempTrainingVectors
+				max_Z[i] = Z
+				max_test_y[i] = test_y
+
+
 # NOTE: Change the value of noOfTotalClasses, noOfTrainingVectors
 # and noOfTestingVectors in actual use.
 # Total number of classes.
@@ -210,7 +247,7 @@ noOfTotalClasses = 3
 # Total number of vectors available for one class.
 noOfTotalVectors = 400
 # For training purposes for one class use first `noOfTrainingVectors` vectors.
-noOfTrainingVectors = 20
+noOfTrainingVectors = 350
 # For testing purposes for one class use first `noOfTestingVectors` vectors.
 noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
 # Each vector contains `noOfFeatures` features.
@@ -228,7 +265,6 @@ max_perf_classifiers = [0]*5
 max_perf_trainingData = [0]*5
 trainingData_start = 2
 trainingData_end = trainingData_start + noOfTrainingVectors
-
 performanceMat = [[0 for x in range(noOfTrainingVectors)] for x in range(5)]
 # Required for the confusion matrix
 # max_Z contains the predicted values when the accuracy is maximum
@@ -236,38 +272,9 @@ max_Z = [[0 for x in range(noOfTestingVectors)] for x in range(5)]
 max_test_y = [[0 for x in range(noOfTestingVectors)] for x in range(5)]
 class_names = getClassNames()
 
-# Iterate over the all possible amounts of training vectors.
-for x in xrange(trainingData_start, trainingData_end):
-	noOfTrainingVectors = x
-	noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
-	# X: We take all the features. Or we can take only some features here by slicing.
-	# y: This contains the actual classes for each training vector i.e the target.
-	X,y = load_trainingData()
-	test_X,test_y = load_testingData()
 
-	# we create instances of SVM and fit our data.
-	C = 1.0  # SVM regularization parameter
-	svc = svm.SVC(kernel='linear', C=C).fit(X, y)
-	lin_svc = svm.LinearSVC(C=C).fit(X, y)
-	rbf_svc = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X, y)
-	poly_svc = svm.SVC(kernel='poly', degree=3, C=C).fit(X, y)
-	nu_svc = svm.NuSVC().fit(X, y) 
-
-	for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc, nu_svc)):
-		# Pass testing data to the classifier
-		Z = clf.predict(test_X)
-		similar = 0
-		for j in xrange(0, noOfTestingVectors*noOfTotalClasses):
-			if Z[j]==test_y[j]:
-				similar+=1
-		score = (similar/float(noOfTestingVectors*noOfTotalClasses))
-		performanceMat[i][x-trainingData_start] = score
-		if max_perf_classifiers[i]<score:
-			max_perf_classifiers[i] = score
-			max_perf_trainingData[i] = noOfTrainingVectors
-			max_Z[i] = Z
-			max_test_y[i] = test_y
-
+# C is SVM Regularization parameter
+trainAndTest(C=1.0)
 
 # ==========================
 # MEASUREMENT OF PERFORMANCE
