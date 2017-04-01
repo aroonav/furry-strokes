@@ -19,6 +19,10 @@ the dataset in DSL-StrongPasswordData.csv, goto: http://www.cs.cmu.edu/~keystrok
 
 These features are used to train and test SVM models for classifying users on
 the basis of the timings between their keystrokes.
+
+Optimal value for TPR and TNR is 1.
+Optimal value for FPR and FNR is 0.
+=================================
 """
 print(__doc__)
 
@@ -130,6 +134,43 @@ def load_testingData():
 			tempData = reader.next()						# Discard one vector
 	return dataset,target
 
+def showCnfValues():
+	columnNames = ["TP", "FN", "FP", "TN", "TPR", "TNR", "FNR", "FPR"]
+	# Each row denotes a class. Each column contains TP, FN, FP, TN, TPR, TNR, FNR, FPR values.
+	cnf_values = [[0 for x in range(len(columnNames))] for x in range(noOfTotalClasses)]
+	total = [0 for x in range(8)]
+	# TODO: Improve the efficiency of the calculation of these values. It's O(n^3) now.
+	# For each class iterate through the entire confusion matrix, calculate and save the values in the matrix.
+	for i in xrange(0, noOfTotalClasses):
+		for j in xrange(0, noOfTotalClasses):
+			for k in xrange(0, noOfTotalClasses):
+				if j!=k and k==i :		# FP Values
+					cnf_values[i][2] += cnf_matrix[j][k]
+				if j==k and j==i:		# TP Values
+					cnf_values[i][0] = cnf_matrix[j][k]
+				if j!=k and j==i:		# FN values
+					cnf_values[i][1] += cnf_matrix[j][k]
+				if j!=i and k!=i:								# TN values
+					cnf_values[i][3] += cnf_matrix[j][k]
+	for i in xrange(0, noOfTotalClasses):
+		cnf_values[i][4] = round(cnf_values[i][0]/float(cnf_values[i][0]+cnf_values[i][1]), 3) 		# TPR = TP/(TP+FN)
+		cnf_values[i][5] = round(cnf_values[i][3]/float(cnf_values[i][3]+cnf_values[i][2]), 3) # TNR = TN/(TN+FP)
+		cnf_values[i][6] = 1-cnf_values[i][4] 		# FNR = FN/(FN+TP) = 1-TPR
+		cnf_values[i][7] = 1-cnf_values[i][5] 		# FPR = FP/(FP+TN) = 1-TNR
+	print "Values from confusion matrix:"
+	rowNames = class_names
+	row_format ="{:>6}" * (len(columnNames) + 1)
+	print row_format.format("", *columnNames)
+	for rowName, row in zip(rowNames, cnf_values):
+		print row_format.format(rowName, *row)
+
+	for i in xrange(0, 4):
+		total[i] = sum([row[i] for row in cnf_values])
+	total[4] = round(total[0]/float(total[0]+total[1]), 3) 		# TPR = TP/(TP+FN)
+	total[5] = round(total[3]/float(total[3]+total[2]), 3)		# TNR = TN/(TN+FP)
+	total[6] = round(1-total[4], 3) 		# FNR = FN/(FN+TP) = 1-TPR
+	total[7] = round(1-total[5], 3) 		# FPR = FP/(FP+TN) = 1-TNR
+	print row_format.format("Total", *total)
 
 # NOTE: Change the value of noOfTotalClasses, noOfTrainingVectors
 # and noOfTestingVectors in actual use.
@@ -138,7 +179,7 @@ noOfTotalClasses = 3
 # Total number of vectors available for one class.
 noOfTotalVectors = 400
 # For training purposes for one class use first `noOfTrainingVectors` vectors.
-noOfTrainingVectors = 250
+noOfTrainingVectors = 20
 # For testing purposes for one class use first `noOfTestingVectors` vectors.
 noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
 # Each vector contains `noOfFeatures` features.
@@ -162,7 +203,8 @@ performanceMat = [[0 for x in range(noOfTrainingVectors)] for x in range(5)]
 # max_Z contains the predicted values when the accuracy is maximum
 max_Z = [[0 for x in range(noOfTestingVectors)] for x in range(5)]
 max_test_y = [[0 for x in range(noOfTestingVectors)] for x in range(5)]
-class_names = ['s003', 's004', 's005']
+# TODO: Automate this
+class_names = ['s002', 's003', 's004']
 
 
 # Iterate over the all possible amounts of training vectors.
@@ -202,7 +244,7 @@ for x in xrange(trainingData_start, trainingData_end):
 # MEASUREMENT OF PERFORMANCE
 # ==========================
 # Measure 1: Maximum accuracy of the model over the given training size
-#defined by trainingData_start and trainingData_end
+# defined by trainingData_start and trainingData_end
 print "Maximum accuracy(from 0 to 1) of the 5 classifiers is: ", max_perf_classifiers
 print "Maximum accuracy is attained for training size: ", max_perf_trainingData, "\n"
 
@@ -231,6 +273,8 @@ plt.ylabel("Accuracy(0.0-1.0)")
 plt.figure(figsize = (11,5))
 np.set_printoptions(precision=3)
 for i in xrange(0,5):
+	print "Analysis of classifier", labels[i]
+	print "================================="
 	cnf_matrix = confusion_matrix(max_test_y[i], max_Z[i])
 	# Plot non-normalized confusion matrix
 	plt.subplot(2,5,i+1)
@@ -240,7 +284,9 @@ for i in xrange(0,5):
 	plt.subplot(2,5,i+6)
 	plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True,
 												title=labels[i])
+	showCnfValues()
+	print "\n"
 plt.show()
-# TODO: Calculate rates on the basis of this confusion matrix.
+
 
 # TODO: Measure 4: Plot the performance of each classifier for higher no. of classes when training size is set at the point of maximum accuracy for 3 classes.
