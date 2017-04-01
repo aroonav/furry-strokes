@@ -34,6 +34,16 @@ import itertools
 from sklearn import svm
 from sklearn.metrics import confusion_matrix
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 def plot_confusion_matrix(cm, classes,
 													normalize=False,
 													title='Confusion matrix',
@@ -159,7 +169,7 @@ def showCnfValues():
 		cnf_values[i][7] = 1-cnf_values[i][5] 		# FPR = FP/(FP+TN) = 1-TNR
 	print "Values from confusion matrix:"
 	rowNames = class_names
-	row_format ="{:>6}" * (len(columnNames) + 1)
+	row_format ="{:>7}" * (len(columnNames) + 1)
 	print row_format.format("", *columnNames)
 	for rowName, row in zip(rowNames, cnf_values):
 		print row_format.format(rowName, *row)
@@ -170,7 +180,14 @@ def showCnfValues():
 	total[5] = round(total[3]/float(total[3]+total[2]), 3)		# TNR = TN/(TN+FP)
 	total[6] = round(1-total[4], 3) 		# FNR = FN/(FN+TP) = 1-TPR
 	total[7] = round(1-total[5], 3) 		# FPR = FP/(FP+TN) = 1-TNR
-	print row_format.format("Total", *total)
+
+	row_format1 = "{:>7}"*5
+	row_format2 = "{:>5}" + "{:>7}"
+	print row_format1.format("Total", *(total[:4])),
+	print bcolors.OKGREEN,
+	print row_format2.format(*(total[4:6])),
+	print bcolors.ENDC,
+	print row_format2.format(*(total[6:])),
 
 # NOTE: Change the value of noOfTotalClasses, noOfTrainingVectors
 # and noOfTestingVectors in actual use.
