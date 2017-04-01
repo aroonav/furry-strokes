@@ -158,7 +158,7 @@ def load_testingData(tempTrainingVectors, tempTestingVectors):
 			tempData = reader.next()						# Discard one vector
 	return dataset,target
 
-def showCnfValues():
+def showCnfValues(cnf_matrix):
 	columnNames = ["TP", "FN", "FP", "TN", "TPR", "TNR", "FNR", "FPR"]
 	# Each row denotes a class. Each column contains TP, FN, FP, TN, TPR, TNR, FNR, FPR values.
 	cnf_values = [[0 for x in range(len(columnNames))] for x in range(noOfTotalClasses)]
@@ -239,6 +239,48 @@ def trainAndTest(C):
 				max_Z[i] = Z
 				max_test_y[i] = test_y
 
+def measure2():
+	"""
+	Plot the TPR vs training size.
+	"""
+	# Scatter plot the maximum (max_TPR, training size) points of each classifier
+	for x in xrange(0, 5):
+		plt.plot(range(trainingData_start, trainingData_end), performanceMat[x], label=labels[x])
+		# Plot the maximum TPR points
+	plt.scatter(max_perf_trainingData, max_perf_classifiers)
+		# Annotate the maximum TPR points
+	for i in xrange(0, 5):
+		pt_label = "(" + str(max_perf_trainingData[i]) + "," + "{0:.3f}".format(max_perf_classifiers[i]) + ")"
+		plt.annotate(pt_label, xy=(max_perf_trainingData[i], max_perf_classifiers[i]),
+									xytext=(4,4), textcoords='offset points', fontsize='x-small')
+	#TODO: Point annotations are overlapping. Correct it.
+	legend = plt.legend(loc = 'upper left', shadow=True, fontsize=8)
+	legend.get_frame()
+	plt.title("Graph 1: TPR vs Training size")
+	plt.xlabel("Training size")
+	plt.ylabel("TPR(0.0-1.0)")
+
+def measure3():
+	"""
+	Plot the confusion matrix for each classifier when the TPR is the most.
+	"""
+	plt.figure(figsize = (11,5))
+	np.set_printoptions(precision=3)
+	for i in xrange(0,5):
+		print "Analysis of classifier", labels[i]
+		print "================================="
+		cnf_matrix = confusion_matrix(max_test_y[i], max_Z[i])
+		# Plot non-normalized confusion matrix
+		plt.subplot(2,5,i+1)
+		plot_confusion_matrix(cnf_matrix, classes=class_names,
+													title=labels[i])
+		# Plot normalized confusion matrix
+		plt.subplot(2,5,i+6)
+		plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True,
+													title=labels[i])
+		showCnfValues(cnf_matrix)
+		print "\n"
+	plt.show()
 
 # NOTE: Change the value of noOfTotalClasses, noOfTrainingVectors
 # and noOfTestingVectors in actual use.
@@ -247,7 +289,7 @@ noOfTotalClasses = 3
 # Total number of vectors available for one class.
 noOfTotalVectors = 400
 # For training purposes for one class use first `noOfTrainingVectors` vectors.
-noOfTrainingVectors = 350
+noOfTrainingVectors = 20
 # For testing purposes for one class use first `noOfTestingVectors` vectors.
 noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
 # Each vector contains `noOfFeatures` features.
@@ -259,18 +301,19 @@ datasetPath = os.path.normpath(os.getcwd() + os.sep + os.pardir)
 datasetPath = datasetPath + os.sep + "DSL-StrongPasswordData.csv"
 max_training = 0
 max_scores = []
-# Maximum accuracy of each classifier
+# Maximum TPR of each classifier
 max_perf_classifiers = [0]*5
-# Amount of training data required to achieve maximum accuracy
+# Amount of training data required to achieve maximum TPR
 max_perf_trainingData = [0]*5
 trainingData_start = 2
 trainingData_end = trainingData_start + noOfTrainingVectors
 performanceMat = [[0 for x in range(noOfTrainingVectors)] for x in range(5)]
 # Required for the confusion matrix
-# max_Z contains the predicted values when the accuracy is maximum
+# max_Z contains the predicted values when the TPR is maximum
 max_Z = [[0 for x in range(noOfTestingVectors)] for x in range(5)]
 max_test_y = [[0 for x in range(noOfTestingVectors)] for x in range(5)]
 class_names = getClassNames()
+labels = ['SVC(linear)', 'LinearSVC', 'SVC(rbf)', 'SVC(poly)', 'NuSVC(rbf)']
 
 
 # C is SVM Regularization parameter
@@ -279,50 +322,13 @@ trainAndTest(C=1.0)
 # ==========================
 # MEASUREMENT OF PERFORMANCE
 # ==========================
-# Measure 1: Maximum accuracy of the model over the given training size
+# Measure 1: Maximum TPR of the model over the given training size
 # defined by trainingData_start and trainingData_end
-print "Maximum accuracy(from 0 to 1) of the 5 classifiers is: ", max_perf_classifiers
-print "Maximum accuracy is attained for training size: ", max_perf_trainingData, "\n"
+print "Maximum TPR(from 0 to 1) of the 5 classifiers is: ", max_perf_classifiers
+print "Maximum TPR is attained for training size: ", max_perf_trainingData, "\n"
 
-
-# Measure 2: Plot the performance vs training size.
-# Scatter plot the maximum (accuracy, training size) points of each classifier
-labels = ['SVC(linear)', 'LinearSVC', 'SVC(rbf)', 'SVC(poly)', 'NuSVC(rbf)']
-for x in xrange(0, 5):
-	plt.plot(range(trainingData_start, trainingData_end), performanceMat[x], label=labels[x])
-	# Plot the maximum accuracy points
-plt.scatter(max_perf_trainingData, max_perf_classifiers)
-	# Annotate the maximum accuracy points
-for i in xrange(0, 5):
-	pt_label = "(" + str(max_perf_trainingData[i]) + "," + "{0:.3f}".format(max_perf_classifiers[i]) + ")"
-	plt.annotate(pt_label, xy=(max_perf_trainingData[i], max_perf_classifiers[i]),
-								xytext=(4,4), textcoords='offset points', fontsize='x-small')
-#TODO: Point annotations are overlapping. Correct it.
-legend = plt.legend(loc = 'upper left', shadow=True, fontsize=8)
-legend.get_frame()
-plt.title("Graph 1: Accuracy vs Training size")
-plt.xlabel("Training size")
-plt.ylabel("Accuracy(0.0-1.0)")
-
-
-# Measure 3: Plot the confusion matrix for each classifier when the accuracy is the most.
-plt.figure(figsize = (11,5))
-np.set_printoptions(precision=3)
-for i in xrange(0,5):
-	print "Analysis of classifier", labels[i]
-	print "================================="
-	cnf_matrix = confusion_matrix(max_test_y[i], max_Z[i])
-	# Plot non-normalized confusion matrix
-	plt.subplot(2,5,i+1)
-	plot_confusion_matrix(cnf_matrix, classes=class_names,
-												title=labels[i])
-	# Plot normalized confusion matrix
-	plt.subplot(2,5,i+6)
-	plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True,
-												title=labels[i])
-	showCnfValues()
-	print "\n"
-plt.show()
-
-
-# TODO: Measure 4: Plot the performance of each classifier for higher no. of classes when training size is set at the point of maximum accuracy for 3 classes.
+# Measure 2: Plot the TPR vs training size.
+measure2()
+# Measure 3: Plot the confusion matrix for each classifier when the TPR is the most.
+measure3()
+# TODO: Measure 4: Plot the performance of each classifier for higher no. of classes when training size is set at the point of maximum TPR for 3 classes.
