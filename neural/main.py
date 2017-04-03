@@ -16,7 +16,11 @@ def load_trainingData():
 	file = open(datasetPath)
 	reader = csv.reader(file)
 	reader.next()
-	for i in range(noOfTotalClasses):
+	for i in range(noOfTotalClasses + 1):
+		if i == 0:
+			for j in xrange(noOfTotalVectors):
+				reader.next()
+			continue
 		for j in range(noOfTrainingVectors):
 			tempData = reader.next()					# Read one vector
 			currentSubject = tempData[0]			# Save subject's name
@@ -46,7 +50,11 @@ def load_testingData():
 	file = open(datasetPath)
 	reader = csv.reader(file)
 	reader.next()
-	for i in range(noOfTotalClasses):
+	for i in range(noOfTotalClasses + 1):
+		if i == 0:
+			for j in xrange(noOfTotalVectors):
+				reader.next()
+			continue
 		for j in range(noOfTrainingVectors):	# Discard training vectors now
 			tempData = reader.next()						# Discard one vector
 		for j in range(noOfTestingVectors):
@@ -92,11 +100,11 @@ X,y = load_trainingData()
 test_X,test_y = load_testingData()
 
 sgd_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
-		activation = "tanh", solver = "sgd", random_state = 1, max_iter = 1000, learning_rate = "adaptive")
+		activation = "tanh", solver = "sgd", max_iter = 1200, learning_rate = "adaptive")
 adam_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
-		activation = "tanh", solver = "adam", random_state = 1, max_iter = 500)
+		activation = "tanh", solver = "adam", max_iter = 1000)
 lbfgs_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
-		activation = "tanh", solver = "lbfgs", random_state = 1, max_iter = 500)
+		activation = "tanh", solver = "lbfgs", max_iter = 1000)
 
 sgd_clf.fit(X,y)
 adam_clf.fit(X,y)
