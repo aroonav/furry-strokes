@@ -44,10 +44,10 @@ noOfTotalClasses = 3
 # Total number of vectors available for one class.
 noOfTotalVectors = 400
 # For training purposes for one class use first `noOfTrainingVectors` vectors.
-noOfTrainingVectors = 300
+noOfTrainingVectors = 150
 # For testing purposes for one class use first `noOfTestingVectors` vectors.
 # noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
-noOfTestingVectors = 100
+noOfTestingVectors = 0
 # Each vector contains `noOfFeatures` features.
 noOfFeatures = 31
 # This contains the path for the dataset.
@@ -156,37 +156,37 @@ def kbevent(event):
     	if keyEvent.mname == "key up":
     		running = False
 
+for i in range(10):
+	UpArray = []
+	DownArray = []
+	# Create hookmanager
+	hookman = pyxhook.HookManager()
+	# Define our callback to fire when a key is pressed down
+	hookman.KeyDown = kbevent
+	hookman.KeyUp = kbevent
+	# Hook the keyboard
+	hookman.HookKeyboard()
+	# Start our listener
 
-UpArray = []
-DownArray = []
-# Create hookmanager
-hookman = pyxhook.HookManager()
-# Define our callback to fire when a key is pressed down
-hookman.KeyDown = kbevent
-hookman.KeyUp = kbevent
-# Hook the keyboard
-hookman.HookKeyboard()
-# Start our listener
+	hookman.start()
+	# Create a loop to keep the application running
+	running = True
+	while running:
+	    time.sleep(0.00001)
 
-hookman.start()
-# Create a loop to keep the application running
-running = True
-while running:
-    time.sleep(0.00001)
+	# Close the listener when we are done
+	hookman.cancel()
+	tcflush(sys.stdin, TCIOFLUSH)
 
-# Close the listener when we are done
-hookman.cancel()
-tcflush(sys.stdin, TCIOFLUSH)
+	writer = StrokesLine(UpArray, DownArray)
+	testing_vector = writer.returnVector()
+	testing_vector = map(float, testing_vector)
+	testing_vector = [[testing_vector[x] for x in range(len(testing_vector))]]
 
-writer = StrokesLine(UpArray, DownArray)
-testing_vector = writer.returnVector()
-testing_vector = map(float, testing_vector)
-testing_vector = [[testing_vector[x] for x in range(len(testing_vector))]]
+	print "\nOkay, testing against our classifiers..."
 
-print "\nOkay, testing against our classifiers..."
-
-classifiers = ['NN(SGD)', 'NN(Adam)', 'NN(Lbfgs)', 'SVC(linear)', 'LinearSVC', 'SVC(rbf)', 'SVC(poly)', 'NuSVC(rbf)']
-for i, clf in enumerate((sgd_clf, adam_clf, lbfgs_clf, svc, lin_svc, rbf_svc, nu_svc)):
-	# Pass testing data to the classifier
-	Z = clf.predict(testing_vector)
-	print "\n", classifiers[i],"predicts:", Z[0]
+	classifiers = ['NN(SGD)', 'NN(Adam)', 'NN(Lbfgs)', 'SVC(linear)', 'LinearSVC', 'SVC(rbf)', 'NuSVC(rbf)']
+	for i, clf in enumerate((sgd_clf, adam_clf, lbfgs_clf, svc, lin_svc, rbf_svc, nu_svc)):
+		# Pass testing data to the classifier
+		Z = clf.predict(testing_vector)
+		print "\n", classifiers[i],"predicts:", Z[0]
