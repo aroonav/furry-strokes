@@ -6,6 +6,7 @@ import pyxhook.pyxhook as pyxhook
 import time
 import csv
 import sys
+from sklearn import svm
 from termios import tcflush, TCIOFLUSH
 
 def load_trainingData():
@@ -20,11 +21,7 @@ def load_trainingData():
 	file = open(datasetPath)
 	reader = csv.reader(file)
 	reader.next()
-	for i in range(noOfTotalClasses + 1):
-		if i == 0:
-			for j in xrange(noOfTotalVectors):
-				reader.next()
-			continue
+	for i in range(noOfTotalClasses):
 		for j in range(noOfTrainingVectors):
 			tempData = reader.next()					# Read one vector
 			currentSubject = tempData[0]			# Save subject's name
@@ -55,7 +52,7 @@ noOfTestingVectors = 100
 noOfFeatures = 31
 # This contains the path for the dataset.
 datasetPath = os.path.normpath(os.getcwd() + os.sep + os.pardir)
-datasetPath = datasetPath + os.sep + "DSL-StrongPasswordData.csv"
+datasetPath = datasetPath + os.sep + "OURdata.csv"
 
 
 noOfInputNodes = 31
@@ -68,16 +65,30 @@ noOfOutputNodes = noOfTotalClasses
 # y: This contains the actual classes for each training vector i.e the target.
 X,y = load_trainingData()
 
+# Neural network classifiers
 sgd_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
 		activation = "tanh", solver = "sgd", max_iter = 1200, learning_rate = "adaptive")
 adam_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
 		activation = "tanh", solver = "adam", max_iter = 1000)
 lbfgs_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
 		activation = "tanh", solver = "lbfgs", max_iter = 1000)
+# SVM Classifiers
+C = 1.0  # SVM regularization parameter
+svc_clf = svm.SVC(kernel='linear', C=C)
+lin_svc_clf = svm.LinearSVC(C=C)
+rbf_svc_clf = svm.SVC(kernel='rbf', gamma=0.7, C=C)
+nu_svc_clf = svm.NuSVC()
 
+# Training of neural networks classifiers
 sgd_clf.fit(X,y)
 adam_clf.fit(X,y)
 lbfgs_clf.fit(X,y)
+# Training of SVM classifiers
+svc = svc_clf.fit(X, y)
+lin_svc = lin_svc_clf.fit(X, y)
+rbf_svc = rbf_svc_clf.fit(X, y)
+nu_svc = nu_svc_clf.fit(X, y)
+
 
 
 print "Model Trained"
@@ -170,16 +181,12 @@ tcflush(sys.stdin, TCIOFLUSH)
 writer = StrokesLine(UpArray, DownArray)
 testing_vector = writer.returnVector()
 testing_vector = map(float, testing_vector)
+testing_vector = [[testing_vector[x] for x in range(len(testing_vector))]]
 
 print "\nOkay, testing against our classifiers..."
 
-for i, clf in enumerate((sgd_clf, adam_clf, lbfgs_clf)):
-	if(i==0):
-		print "SGD solver predicts:"
-	elif(i==1):
-		print "Adam solver predicts:"
-	else:
-		print "Lbfgs solver predicts:"	
+classifiers = ['NN(SGD)', 'NN(Adam)', 'NN(Lbfgs)', 'SVC(linear)', 'LinearSVC', 'SVC(rbf)', 'SVC(poly)', 'NuSVC(rbf)']
+for i, clf in enumerate((sgd_clf, adam_clf, lbfgs_clf, svc, lin_svc, rbf_svc, nu_svc)):
 	# Pass testing data to the classifier
 	Z = clf.predict(testing_vector)
-	print Z[0]
+	print "\n", classifiers[i],"predicts:", Z[0]
