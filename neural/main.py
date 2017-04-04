@@ -16,11 +16,12 @@ def load_trainingData():
 	file = open(datasetPath)
 	reader = csv.reader(file)
 	reader.next()
-	for i in range(noOfTotalClasses + 1):
-		if i == 0:
-			for j in xrange(noOfTotalVectors):
-				reader.next()
-			continue
+	for i in range(noOfTotalClasses):
+	# for i in range(noOfTotalClasses+1):
+	# 	if i == 0:
+	# 		for j in xrange(noOfTotalVectors):
+	# 			reader.next()
+	# 		continue
 		for j in range(noOfTrainingVectors):
 			tempData = reader.next()					# Read one vector
 			currentSubject = tempData[0]			# Save subject's name
@@ -50,11 +51,12 @@ def load_testingData():
 	file = open(datasetPath)
 	reader = csv.reader(file)
 	reader.next()
-	for i in range(noOfTotalClasses + 1):
-		if i == 0:
-			for j in xrange(noOfTotalVectors):
-				reader.next()
-			continue
+	for i in range(noOfTotalClasses):
+	# for i in range(noOfTotalClasses+1):
+	# 	if i == 0:
+	# 		for j in xrange(noOfTotalVectors):
+	# 			reader.next()
+	# 		continue
 		for j in range(noOfTrainingVectors):	# Discard training vectors now
 			tempData = reader.next()						# Discard one vector
 		for j in range(noOfTestingVectors):
@@ -85,7 +87,8 @@ noOfTestingVectors = 100
 noOfFeatures = 31
 # This contains the path for the dataset.
 datasetPath = os.path.normpath(os.getcwd() + os.sep + os.pardir)
-datasetPath = datasetPath + os.sep + "DSL-StrongPasswordData.csv"
+# datasetPath = datasetPath + os.sep + "DSL-StrongPasswordData.csv"
+datasetPath = datasetPath + os.sep + "OURdata.csv"
 
 
 noOfInputNodes = 31

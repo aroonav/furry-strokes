@@ -112,10 +112,11 @@ def load_trainingData(tempTrainingVectors, tempTestingVectors):
 	reader = csv.reader(file)
 	reader.next()
 	for i in range(noOfTotalClasses):
-		# if i==0:
-		# 	for j in range(noOfTotalVectors):
-		# 		tempData = reader.next()						# Discard one vector
-		# 	continue
+	# for i in range(noOfTotalClasses+1):				# Skip s002
+	# 	if i==0:
+	# 		for j in range(noOfTotalVectors):
+	# 			tempData = reader.next()						# Discard one vector
+	# 		continue
 		for j in range(tempTrainingVectors):
 			tempData = reader.next()					# Read one vector
 			currentSubject = tempData[0]			# Save subject's name
@@ -145,10 +146,11 @@ def load_testingData(tempTrainingVectors, tempTestingVectors):
 	reader = csv.reader(file)
 	reader.next()
 	for i in range(noOfTotalClasses):
-		# if i==0:
-		# 	for j in range(noOfTotalVectors):
-		# 		tempData = reader.next()						# Discard one vector
-		# 	continue
+	# for i in range(noOfTotalClasses+1):		# Skip s002
+	# 	if i==0:
+	# 		for j in range(noOfTotalVectors):
+	# 			tempData = reader.next()				# Discard one vector
+	# 		continue
 		for j in range(tempTrainingVectors):	# Discard training vectors now
 			tempData = reader.next()						# Discard one vector
 		for j in range(tempTestingVectors):
@@ -258,8 +260,8 @@ def trainAndTest(C):
 			Z = clf.predict(test_X)
 			cnf_matrix = confusion_matrix(test_y, Z)
 			cnf_values = fillCnfValues(cnf_matrix)
-			currentTPR = cnf_values[3][4]
-			currentAccuracy = cnf_values[3][8]
+			currentTPR = cnf_values[noOfTotalClasses][4]
+			currentAccuracy = cnf_values[noOfTotalClasses][8]
 			TPRMatrix[i][x-trainingData_start] = currentTPR
 			accuracyMatrix[i][x-trainingData_start] = currentAccuracy
 			if max_TPR_classifiers[i]<currentTPR:
@@ -354,16 +356,18 @@ noOfTotalClasses = 3
 #: Total number of vectors available for one class.
 noOfTotalVectors = 400
 #: For training purposes for one class use first `noOfTrainingVectors` vectors.
-noOfTrainingVectors = 350
+noOfTrainingVectors = 300
 #: For testing purposes for one class use first `noOfTestingVectors` vectors.
 noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
+# TODO: Automate this. Extract this data from first line of dataset.
 #: Each vector contains `noOfFeatures` features.
 noOfFeatures = 31
 #: This contains the no of classifiers defined below
 noOfClassifiers = 5
 #: This contains the path for the dataset.
 datasetPath = os.path.normpath(os.getcwd() + os.sep + os.pardir)
-datasetPath = datasetPath + os.sep + "DSL-StrongPasswordData.csv"
+# datasetPath = datasetPath + os.sep + "DSL-StrongPasswordData.csv"
+datasetPath = datasetPath + os.sep + "OURdata.csv"
 max_training = 0
 max_scores = []
 trainingData_start = 2
@@ -412,4 +416,3 @@ measure1()
 measure2()
 # Measure 3: Plot the confusion matrix for each classifier when the TPR is the most.
 measure3()
-# TODO: Measure 4: Plot the performance of each classifier for higher no. of classes when training size is set at the point of maximum TPR for 3 classes.

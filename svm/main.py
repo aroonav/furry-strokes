@@ -90,21 +90,21 @@ def load_testingData():
 
 # NOTE: Change the value of noOfTotalClasses, noOfTrainingVectors and noOfTestingVectors in actual use.
 # Total number of classes.
-noOfTotalClasses = 3
+noOfTotalClasses = 2
 # Total number of vectors available for one class.
 noOfTotalVectors = 400
 # For training purposes for one class use first `noOfTrainingVectors` vectors.
-noOfTrainingVectors = 250
+noOfTrainingVectors = 300
 # For testing purposes for one class use first `noOfTestingVectors` vectors.
 # noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
-noOfTestingVectors = 150
+noOfTestingVectors = 100
 # Each vector contains `noOfFeatures` features.
 noOfFeatures = 31
 # This contains the no of classifiers defined below
 noOfClassifiers = 5
 # This contains the path for the dataset.
 datasetPath = os.path.normpath(os.getcwd() + os.sep + os.pardir)
-datasetPath = datasetPath + os.sep + "DSL-StrongPasswordData.csv"
+datasetPath = datasetPath + os.sep + "OURdata.csv"
 
 # X: We take all the features. Or we can take only some features here by slicing.
 # y: This contains the actual classes for each training vector i.e the target.
