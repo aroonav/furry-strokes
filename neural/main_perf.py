@@ -1,23 +1,12 @@
 """
-=================================
-SVM Models for keystroke dynamics
-=================================
-
-Implementation and comaprison of performance of four SVM classifiers(1 is
- ``LinearSVC()`` and the others are ``SVC()``).
-
-The linear models ``LinearSVC()`` and ``SVC(kernel='linear')`` yield slightly
-different results. This can be a consequence of the following differences:
-
-- ``LinearSVC`` minimizes the squared hinge loss while ``SVC`` minimizes the
-	regular hinge loss.
-- ``LinearSVC`` uses the One-vs-All (also known as One-vs-Rest) multiclass
-	reduction while ``SVC`` uses the One-vs-One multiclass reduction.
+============================================
+Neural networl models for keystroke dynamics
+============================================
 
 We consider all the 31 features for classification. For more details about
 the dataset in DSL-StrongPasswordData.csv, goto: http://www.cs.cmu.edu/~keystroke/
 
-These features are used to train and test SVM models for classifying users on
+These features are used to train and test neural network models for classifying users on
 the basis of the timings between their keystrokes.
 
 Optimal value for TPR and TNR is 1.
@@ -29,7 +18,7 @@ Values from confusion matrix:
 	 s003    355     25    230    530  0.934  0.697  0.066  0.303     0.776
 	 s004    236    144    290    470  0.621  0.618  0.379  0.382     0.619
 	Total    612    528    528   1752  0.537  0.768  0.463  0.232     0.691
-=================================
+============================================
 """
 print(__doc__)
 
@@ -38,8 +27,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv
 import itertools
-from sklearn import svm
 from sklearn.metrics import confusion_matrix
+from sklearn.neural_network import MLPClassifier
 
 class bcolors:
 	HEADER = '\033[95m'
@@ -232,13 +221,12 @@ def showCnfValues(cnf_matrix):
 	print row_format3.format(total[8])
 	print bcolors.ENDC,
 
-def trainAndTest(C):
+def trainAndTest():
 	"""
-	This will train the SVM Models and then test the models.
-	C is the SVM regularization parameter
+	This will train the neural models and then test the models.
 	"""
 	# Training phase
-	global TPRMatrix,accuracyMatrix , max_TPR_classifiers,max_accuracy_classifiers, trainingDataForMaxTPR,trainingDataForMaxAccuracy, maxTPR_Z,maxAcc_Z, maxTPR_test_y,maxAcc_test_y
+	global TPRMatrix,accuracyMatrix, max_TPR_classifiers, max_accuracy_classifiers, trainingDataForMaxTPR,trainingDataForMaxAccuracy, maxTPR_Z,maxAcc_Z, maxTPR_test_y,maxAcc_test_y
 	# Iterate over the all possible amounts of training vectors.
 	for x in xrange(trainingData_start, trainingData_end):
 		tempTrainingVectors = x
@@ -248,14 +236,19 @@ def trainAndTest(C):
 		X,y = load_trainingData(tempTrainingVectors, tempTestingVectors)
 		test_X,test_y = load_testingData(tempTrainingVectors, tempTestingVectors)
 
-		# we create instances of SVM and fit our data.
-		svc = svm.SVC(kernel='linear', C=C).fit(X, y)
-		lin_svc = svm.LinearSVC(C=C).fit(X, y)
-		rbf_svc = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X, y)
-		poly_svc = svm.SVC(kernel='poly', degree=3, C=C).fit(X, y)
-		nu_svc = svm.NuSVC().fit(X, y) 
+		# Neural network classifiers
+		sgd_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
+				activation = "tanh", solver = "sgd", max_iter = 1200, learning_rate = "adaptive")
+		adam_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
+				activation = "tanh", solver = "adam", max_iter = 1000)
+		lbfgs_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
+				activation = "tanh", solver = "lbfgs", max_iter = 1000)
+		# Training of neural networks classifiers
+		sgd_clf.fit(X,y)
+		adam_clf.fit(X,y)
+		lbfgs_clf.fit(X,y)
 
-		for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc, nu_svc)):
+		for i, clf in enumerate((sgd_clf, adam_clf, lbfgs_clf)):
 			# Pass testing data to the classifier
 			Z = clf.predict(test_X)
 			cnf_matrix = confusion_matrix(test_y, Z)
@@ -363,7 +356,7 @@ noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
 #: Each vector contains `noOfFeatures` features.
 noOfFeatures = 31
 #: This contains the no of classifiers defined below
-noOfClassifiers = 5
+noOfClassifiers = 3
 #: This contains the path for the dataset.
 datasetPath = os.path.normpath(os.getcwd() + os.sep + os.pardir)
 # datasetPath = datasetPath + os.sep + "DSL-StrongPasswordData.csv"
@@ -372,6 +365,13 @@ max_training = 0
 max_scores = []
 trainingData_start = 2
 trainingData_end = trainingData_start + noOfTrainingVectors
+
+noOfInputNodes = noOfFeatures
+# The number of Hidden nodes is taken as (2*P)/3, where P is the number of the input nodes
+noOfHiddenNodes = 15
+# The number of output nodes is equal to the number of classes
+noOfOutputNodes = noOfTotalClasses
+
 
 # Metrics for saving state of classifier at maximum TPR & Accuracy
 #: Maximum TPR of each classifier
@@ -399,13 +399,12 @@ maxTPR_test_y = [[0 for x in range(noOfTestingVectors)] for x in range(noOfClass
 maxAcc_test_y = [[0 for x in range(noOfTestingVectors)] for x in range(noOfClassifiers)]
 
 class_names = getClassNames()
-labels = ['SVC(linear)', 'LinearSVC', 'SVC(rbf)', 'SVC(poly)', 'NuSVC(rbf)']
+labels = ['NN(SGD)', 'NN(Adam)', 'NN(Lbfgs)']
 #: These are the column names of the matrix filled by fillCnfValues()
 columnNames = ["TP", "FN", "FP", "TN", "TPR", "TNR", "FNR", "FPR", "Accuracy"]
 
 
-# C is SVM Regularization parameter
-trainAndTest(C=1.0)
+trainAndTest()
 
 # ==========================
 # MEASUREMENT OF PERFORMANCE

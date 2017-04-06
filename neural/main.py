@@ -91,7 +91,7 @@ datasetPath = os.path.normpath(os.getcwd() + os.sep + os.pardir)
 datasetPath = datasetPath + os.sep + "OURdata.csv"
 
 
-noOfInputNodes = 31
+noOfInputNodes = noOfFeatures
 # The number of Hidden nodes is taken as (2*P)/3, where P is the number of the input nodes
 noOfHiddenNodes = 15
 # The number of output nodes is equal to the number of classes
