@@ -11,7 +11,7 @@ from termios import tcflush, TCIOFLUSH
 
 def load_trainingData():
 	"""
-	This reads file DSL-StrongPasswordData.csv and returns the training data in
+	This reads file `datasetPath` and returns the training data in
 	an ndarray of shape noOfTrainingVectors*noOfFeatures and target ndarray
 	of shape (noOfTrainingVectors*noOfTotalClasses)*1.
 	"""
@@ -39,10 +39,10 @@ def load_trainingData():
 	return dataset,target
 
 
-# Total number of classehidden_layer_sizes.
-noOfTotalClasses = 3
+# Total number of classes.
+noOfTotalClasses = 5
 # Total number of vectors available for one class.
-noOfTotalVectors = 400
+noOfTotalVectors = 250
 # For training purposes for one class use first `noOfTrainingVectors` vectors.
 noOfTrainingVectors = 150
 # For testing purposes for one class use first `noOfTestingVectors` vectors.
@@ -51,13 +51,14 @@ noOfTestingVectors = 0
 # Each vector contains `noOfFeatures` features.
 noOfFeatures = 31
 # This contains the path for the dataset.
+fileName = "IIITBh-Small.csv"
 datasetPath = os.path.normpath(os.getcwd() + os.sep + os.pardir)
-datasetPath = datasetPath + os.sep + "OURdata.csv"
+datasetPath = datasetPath + os.sep + fileName
 
 
-noOfInputNodes = 31
-# The number of Hidden nodes is taken as (2*P)/3, where P is the number of the input nodes
-noOfHiddenNodes = 15
+noOfInputNodes = noOfFeatures
+# The number of hidden nodes.
+noOfHiddenNodes = 25
 # The number of output nodes is equal to the number of classes
 noOfOutputNodes = noOfTotalClasses
 
@@ -66,28 +67,22 @@ noOfOutputNodes = noOfTotalClasses
 X,y = load_trainingData()
 
 # Neural network classifiers
-sgd_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
-		activation = "tanh", solver = "sgd", max_iter = 1200, learning_rate = "adaptive")
 adam_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
-		activation = "tanh", solver = "adam", max_iter = 1000)
-lbfgs_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
-		activation = "tanh", solver = "lbfgs", max_iter = 1000)
+				activation = "tanh", solver = "adam", max_iter = 1000, random_state=0, alpha=0.001)
+sgd_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
+				activation = "tanh", solver = "sgd", max_iter = 1800, learning_rate = "adaptive", 
+				learning_rate_init=0.01, random_state=0, alpha=0.01)
 # SVM Classifiers
-C = 1.0  # SVM regularization parameter
-svc_clf = svm.SVC(kernel='linear', C=C)
-lin_svc_clf = svm.LinearSVC(C=C)
-rbf_svc_clf = svm.SVC(kernel='rbf', gamma=0.7, C=C)
-nu_svc_clf = svm.NuSVC()
+# C is SVM regularization parameter
+rbf_svc_clf = svm.SVC(kernel='rbf', gamma=0.05, C=401)
+lin_svc_clf = svm.SVC(kernel='linear', C=801, gamma=0.01)
 
 # Training of neural networks classifiers
 sgd_clf.fit(X,y)
 adam_clf.fit(X,y)
-lbfgs_clf.fit(X,y)
 # Training of SVM classifiers
-svc = svc_clf.fit(X, y)
 lin_svc = lin_svc_clf.fit(X, y)
 rbf_svc = rbf_svc_clf.fit(X, y)
-nu_svc = nu_svc_clf.fit(X, y)
 
 
 
@@ -125,8 +120,10 @@ class StrokesLine:
 
 		return line
 
-# This function is called at each iteration to check if the password entered is correct
 def checkPass(array):
+	"""
+	This function is called at each iteration to check if the password entered is correct
+	"""
 	global authPass
 	typedPass = ""
 	for i in range(len(array)):
@@ -136,25 +133,27 @@ def checkPass(array):
 		return True
 	else:
 		return False
-		
-# This function is called every time a key is presssed
+
 def kbevent(event):
-    global running
-    global UpArray, DownArray
-    # print key info
-    # tm = repr(time.time())
-    tm = time.time()
+	"""
+	This function is called every time a key is presssed
+	"""
+	global running
+	global UpArray, DownArray
+	# print key info
+	# tm = repr(time.time())
+	tm = time.time()
 
-    keyEvent = KeyStroke(event.Key, event.MessageName, tm)
-    if keyEvent.mname == "key down":
-    	DownArray.append(keyEvent)
-    else:
-    	UpArray.append(keyEvent)
+	keyEvent = KeyStroke(event.Key, event.MessageName, tm)
+	if keyEvent.mname == "key down":
+		DownArray.append(keyEvent)
+	else:
+		UpArray.append(keyEvent)
 
-    # If the ascii value matches carriage return, terminate the while loop
-    if event.Ascii == 13:
-    	if keyEvent.mname == "key up":
-    		running = False
+	# If the ascii value matches carriage return, terminate the while loop
+	if event.Ascii == 13:
+		if keyEvent.mname == "key up":
+			running = False
 
 for i in range(10):
 	UpArray = []
@@ -172,7 +171,7 @@ for i in range(10):
 	# Create a loop to keep the application running
 	running = True
 	while running:
-	    time.sleep(0.00001)
+			time.sleep(0.00001)
 
 	# Close the listener when we are done
 	hookman.cancel()
@@ -185,8 +184,8 @@ for i in range(10):
 
 	print "\nOkay, testing against our classifiers..."
 
-	classifiers = ['NN(SGD)', 'NN(Adam)', 'NN(Lbfgs)', 'SVC(linear)', 'LinearSVC', 'SVC(rbf)', 'NuSVC(rbf)']
-	for i, clf in enumerate((sgd_clf, adam_clf, lbfgs_clf, svc, lin_svc, rbf_svc, nu_svc)):
+	classifiers = ['NN(SGD)', 'NN(Adam)', 'SVC(rbf)', 'SVC(linear)']
+	for i, clf in enumerate((sgd_clf, adam_clf, rbf_svc, lin_svc)):
 		# Pass testing data to the classifier
 		Z = clf.predict(testing_vector)
 		print "\n", classifiers[i],"predicts:", Z[0]

@@ -1,35 +1,17 @@
 """
-=================================
-SVM Models for keystroke dynamics
-=================================
+===================================================================
+Perfomance for SVM and Neural Network Models for keystroke dynamics
+===================================================================
+We consider all the 31 features for classification.
+For more details about IIITBh-keystroke dataset goto: https://github.com/aroonav/IIITBh-keystroke
+For more details about CMU's dataset goto: http://www.cs.cmu.edu/~keystroke/
+These features are used to train and test NN & SVM models for
+classifying users on the basis of the timings between their keystrokes.
 
-Implementation and comaprison of performance of four SVM classifiers(1 is
- ``LinearSVC()`` and the others are ``SVC()``).
-
-The linear models ``LinearSVC()`` and ``SVC(kernel='linear')`` yield slightly
-different results. This can be a consequence of the following differences:
-
-- ``LinearSVC`` minimizes the squared hinge loss while ``SVC`` minimizes the
-	regular hinge loss.
-- ``LinearSVC`` uses the One-vs-All (also known as One-vs-Rest) multiclass
-	reduction while ``SVC`` uses the One-vs-One multiclass reduction.
-
-We consider all the 31 features for classification. For more details about
-the dataset in DSL-StrongPasswordData.csv, goto: http://www.cs.cmu.edu/~keystroke/
-
-These features are used to train and test SVM models for classifying users on
-the basis of the timings between their keystrokes.
-
-Optimal value for TPR and TNR is 1.
-Optimal value for FPR and FNR is 0.
-Example of cnf_values[]:
-Values from confusion matrix:
-	 Subject  TP    FN      FP    TN   TPR    TNR    FNR    FPR       Accuracy
-	 s002     21    359      8    752  0.055  0.989  0.945  0.011     0.678
-	 s003    355     25    230    530  0.934  0.697  0.066  0.303     0.776
-	 s004    236    144    290    470  0.621  0.618  0.379  0.382     0.619
-	Total    612    528    528   1752  0.537  0.768  0.463  0.232     0.691
-=================================
+This will show the graphs of the NN & SVM models for its Precision
+vs training size, TPR vs training size and Confusion matrices for all
+classifiers.
+===================================================================
 """
 print(__doc__)
 
@@ -40,6 +22,7 @@ import csv
 import itertools
 from sklearn import svm
 from sklearn.metrics import confusion_matrix
+from sklearn.neural_network import MLPClassifier
 
 class bcolors:
 	HEADER = '\033[95m'
@@ -52,41 +35,41 @@ class bcolors:
 	UNDERLINE = '\033[4m'
 
 def plot_confusion_matrix(cm, classes,
-													normalize=False,
+													normalize=True,
 													title='Confusion matrix',
 													cmap=plt.cm.Blues):
-		"""
-		This function prints and plots the confusion matrix.
-		Normalization can be applied by setting `normalize=True`.
-		"""
-		plt.imshow(cm, interpolation='nearest', cmap=cmap)
-		plt.title(title)
-		plt.colorbar()
-		tick_marks = np.arange(len(classes))
-		plt.xticks(tick_marks, classes, rotation=45)
-		plt.yticks(tick_marks, classes)
+	"""
+	This function prints and plots the confusion matrix.
+	"""
+	plt.imshow(cm, interpolation='nearest', cmap=cmap)
+	plt.title(title)
+	plt.colorbar()
+	tick_marks = np.arange(len(classes))
+	plt.xticks(tick_marks, classes, rotation=45)
+	plt.yticks(tick_marks, classes)
 
-		if normalize:
-				cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-				print("Normalized confusion matrix")
-		else:
-				print('Confusion matrix, without normalization')
+	if normalize:
+			cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+			print("Normalized confusion matrix")
+	else:
+			print('Confusion matrix, without normalization')
 
-		print(cm)
+	print(cm)
 
-		thresh = cm.max() / 2.
-		for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-				plt.text(j, i, round(cm[i, j], 2),
-								 horizontalalignment="center",
-								 color="white" if cm[i, j] > thresh else "black")
+	thresh = cm.max() / 2.
+	for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+		plt.text(j, i, round(cm[i, j], 2),
+						 horizontalalignment="center",
+						 color="white" if cm[i, j] > thresh else "black")
 
-		plt.tight_layout(pad=0.02, h_pad=None, w_pad=None, rect=None)
-		plt.ylabel('True class')
-		plt.xlabel('Predicted class')
+	plt.tight_layout(pad=0.02, h_pad=None, w_pad=None, rect=None)
+	plt.ylabel('True class')
+	plt.xlabel('Predicted class')
 
 def getClassNames():
 	"""
-	This retrieves the names of the subjects/classes
+	This returns the names of the subjects/classes retrieved from the dataset
+	in `datasetPath`.
 	"""
 	class_names = []
 	file = open(datasetPath)
@@ -102,7 +85,7 @@ def getClassNames():
 
 def load_trainingData(tempTrainingVectors, tempTestingVectors):
 	"""
-	This reads file DSL-StrongPasswordData.csv and returns the training data in
+	This reads file in `datasetPath` and returns the training data in
 	an ndarray of shape tempTrainingVectors*noOfFeatures and target ndarray
 	of shape (tempTrainingVectors*noOfTotalClasses)*1.
 	"""
@@ -135,10 +118,10 @@ def load_trainingData(tempTrainingVectors, tempTestingVectors):
 
 def load_testingData(tempTrainingVectors, tempTestingVectors):
 	"""
-	TODO: Merge load_testingData() and load_trainingData() functions
-	This reads file DSL-StrongPasswordData.csv and returns the testing data in
+	This reads the file in `datasetPath` and returns the testing data in
 	an ndarray of shape tempTestingVectors*noOfFeatures and target ndarray
 	of shape (tempTestingVectors*noOfTotalClasses)*1.
+	TODO: Merge load_testingData() and load_trainingData() functions
 	"""
 	dataset = np.empty([0,noOfFeatures])
 	target = np.empty(0)
@@ -169,11 +152,11 @@ def load_testingData(tempTrainingVectors, tempTestingVectors):
 
 def fillCnfValues(cnf_matrix):
 	"""
-	This function saves the TP, FN, FP, TN, TPR, TNR, FNR, FPR, Accuracy values in the matrix
+	This function saves the TP, FN, FP, TN, TPR, TNR, FNR, FPR, Precision values in the matrix
 	of dimensions [len(columnNames), noOfTotalClasses] and returns it.
+	TODO: Improve the efficiency of the calculation of these values. It's O(n^3) now.
+	For each class iterate through the entire confusion matrix, calculate and save the values in the matrix.
 	"""
-	# TODO: Improve the efficiency of the calculation of these values. It's O(n^3) now.
-	# For each class iterate through the entire confusion matrix, calculate and save the values in the matrix.
 	total = [0 for x in range(len(columnNames))]
 	cnf_values = [[0 for x in range(len(columnNames))] for x in range(noOfTotalClasses+1)]
 	for i in xrange(0, noOfTotalClasses):
@@ -192,7 +175,7 @@ def fillCnfValues(cnf_matrix):
 		cnf_values[i][5] = round(cnf_values[i][3]/float(cnf_values[i][3]+cnf_values[i][2]), 3) # TNR = TN/(TN+FP)
 		cnf_values[i][6] = round(1-cnf_values[i][4], 3) 		# FNR = FN/(FN+TP) = 1-TPR
 		cnf_values[i][7] = round(1-cnf_values[i][5], 3) 		# FPR = FP/(FP+TN) = 1-TNR
-		cnf_values[i][8] = round((cnf_values[i][0]+cnf_values[i][3])/float(cnf_values[i][0]+cnf_values[i][1]+cnf_values[i][2]+cnf_values[i][3]), 3) # Accuracy = (TP+TN)/(TP+FN+FP+TN)
+		cnf_values[i][8] = round((cnf_values[i][0])/float(cnf_values[i][0]+cnf_values[i][2]), 3) # Precision = (TP)/(TP+FP)
 	for i in xrange(0, 4):
 		total[i] = sum([row[i] for row in cnf_values])
 	total[4] = round(total[0]/float(total[0]+total[1]), 3) 		# TPR = TP/(TP+FN)
@@ -206,10 +189,10 @@ def fillCnfValues(cnf_matrix):
 
 def showCnfValues(cnf_matrix):
 	"""
-	This prints the TP, FN, FP, TN, TPR, TNR, FNR, FPR, Accuracy values and color codes the important values.
+	This prints the TP, FN, FP, TN, TPR, TNR, FNR, FPR, Precision values and color codes the important values.
 	It also prints the overall performance of the classifier(present in total[] matrix)
+	Each row denotes a class. Each column contains TP, FN, FP, TN, TPR, TNR, FNR, FPR, Precision values.
 	"""
-	# Each row denotes a class. Each column contains TP, FN, FP, TN, TPR, TNR, FNR, FPR, Accuracy values.
 	cnf_values = fillCnfValues(cnf_matrix)
 
 	print "Values from confusion matrix:"
@@ -232,10 +215,9 @@ def showCnfValues(cnf_matrix):
 	print row_format3.format(total[8])
 	print bcolors.ENDC,
 
-def trainAndTest(C):
+def trainAndTest():
 	"""
-	This will train the SVM Models and then test the models.
-	C is the SVM regularization parameter
+	This will train the NN & SVM models and then test the models.
 	"""
 	# Training phase
 	global TPRMatrix,accuracyMatrix , max_TPR_classifiers,max_accuracy_classifiers, trainingDataForMaxTPR,trainingDataForMaxAccuracy, maxTPR_Z,maxAcc_Z, maxTPR_test_y,maxAcc_test_y
@@ -248,14 +230,26 @@ def trainAndTest(C):
 		X,y = load_trainingData(tempTrainingVectors, tempTestingVectors)
 		test_X,test_y = load_testingData(tempTrainingVectors, tempTestingVectors)
 
-		# we create instances of SVM and fit our data.
-		svc = svm.SVC(kernel='linear', C=C).fit(X, y)
-		lin_svc = svm.LinearSVC(C=C).fit(X, y)
-		rbf_svc = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X, y)
-		poly_svc = svm.SVC(kernel='poly', degree=3, C=C).fit(X, y)
-		nu_svc = svm.NuSVC().fit(X, y) 
+		# Neural network classifiers
+		adam_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
+		        activation = "tanh", solver = "adam", max_iter = 1000, random_state=0, alpha=0.001)
+		sgd_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
+		        activation = "tanh", solver = "sgd", max_iter = 1800, learning_rate = "adaptive", 
+		        learning_rate_init=0.01, random_state=0, alpha=0.01)
+		# SVM Classifiers
+		# C is SVM regularization parameter
+		rbf_svc_clf = svm.SVC(kernel='rbf', gamma=0.05, C=401)
+		lin_svc_clf = svm.SVC(kernel='linear', C=801, gamma=0.01)
+		# Training of neural networks classifiers
+		sgd_clf.fit(X,y)
+		adam_clf.fit(X,y)
+		# Training of SVM classifiers
+		lin_svc = lin_svc_clf.fit(X, y)
+		rbf_svc = rbf_svc_clf.fit(X, y)
 
-		for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc, nu_svc)):
+
+		# Testing phase
+		for i, clf in enumerate((lin_svc, rbf_svc, sgd_clf, adam_clf)):
 			# Pass testing data to the classifier
 			Z = clf.predict(test_X)
 			cnf_matrix = confusion_matrix(test_y, Z)
@@ -277,18 +271,18 @@ def trainAndTest(C):
 
 def measure1():
 	"""
-	Measure 1: Print maximum TPR & accuracy of the model over the given training size
+	Measure 1: Print maximum TPR & Precision of the model over the given training size
 	defined by trainingData_start and trainingData_end
 	"""
 	print "Maximum TPR(from 0 to 1) of the", noOfClassifiers ,"classifiers is: ", [round(x, 3) for x in max_TPR_classifiers]
 	print "Maximum TPR is attained for training size: ", trainingDataForMaxTPR, "\n"
-	print "Maximum Accuracy(from 0 to 1) of the", noOfClassifiers ,"classifiers is: ", [round(x, 3) for x in max_accuracy_classifiers]
-	print "Maximum Accuracy is attained for training size: ", trainingDataForMaxAccuracy, "\n"
+	print "Maximum Precision(from 0 to 1) of the", noOfClassifiers ,"classifiers is: ", [round(x, 3) for x in max_accuracy_classifiers]
+	print "Maximum Precision is attained for training size: ", trainingDataForMaxAccuracy, "\n"
 
 def measure2():
 	"""
 	Plot TPR vs training size.
-	Plot Accuracy vs training size.
+	Plot Precision vs training size.
 	"""
 	# Scatter plot the maximum (max_TPR, training size) points of each classifier
 	for x in xrange(0, noOfClassifiers):
@@ -303,7 +297,7 @@ def measure2():
 	#TODO: Point annotations are overlapping. Correct it.
 	legend = plt.legend(loc = 'upper left', shadow=True, fontsize=8)
 	legend.get_frame()
-	plt.title("Graph 1: TPR vs Training size")
+	plt.title("Graph: TPR vs Training size")
 	plt.xlabel("Training size")
 	plt.ylabel("TPR(0.0-1.0)")
 
@@ -311,39 +305,32 @@ def measure2():
 	plt.figure()
 	for x in xrange(0, noOfClassifiers):
 		plt.plot(range(trainingData_start, trainingData_end), accuracyMatrix[x], label=labels[x])
-		# Plot the maximum TPR points
+		# Plot the maximum precision points
 	plt.scatter(trainingDataForMaxAccuracy, max_accuracy_classifiers)
-		# Annotate the maximum TPR points
+		# Annotate the maximum precision points
 	for i in xrange(0, noOfClassifiers):
 		pt_label = "(" + str(trainingDataForMaxAccuracy[i]) + "," + "{0:.3f}".format(max_accuracy_classifiers[i]) + ")"
 		plt.annotate(pt_label, xy=(trainingDataForMaxAccuracy[i], max_accuracy_classifiers[i]),
 									xytext=(4,4), textcoords='offset points', fontsize='x-small')
 	legend = plt.legend(loc = 'upper left', shadow=True, fontsize=8)
 	legend.get_frame()
-	plt.title("Graph 2: Accuracy vs Training size")
+	plt.title("Graph: Precision vs Training size")
 	plt.xlabel("Training size")
-	plt.ylabel("Accuracy(0.0-1.0)")
+	plt.ylabel("Precision(0.0-1.0)")
 
 
 def measure3():
 	"""
-	Plot the confusion matrix for each classifier when the TPR is the most.
+	Plot the confusion matrix for each classifier when the precision is the most.
 	"""
-	plt.figure(figsize = (11,5))
 	np.set_printoptions(precision=3)
 	for i in xrange(0, noOfClassifiers):
+		plt.figure()
 		print "Analysis of classifier", labels[i]
 		print "================================="
-		cnf_matrix = confusion_matrix(maxTPR_test_y[i], maxTPR_Z[i])
-		# Plot non-normalized confusion matrix
-		plt.subplot(2,5,i+1)
-		plot_confusion_matrix(cnf_matrix, classes=class_names,
-													title=labels[i])
+		cnf_matrix = confusion_matrix(maxAcc_test_y[i], maxAcc_Z[i])
 		# Plot normalized confusion matrix
-		plt.subplot(2,5,i+6)
-		plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True,
-													title=labels[i])
-		# print "#######", len(cnf_matrix[0]), cnf_matrix, maxTPR_test_y, maxTPR_Z
+		plot_confusion_matrix(cnf_matrix, classes=class_names, title=labels[i])
 		showCnfValues(cnf_matrix)
 		print "\n"
 	plt.show()
@@ -352,26 +339,34 @@ def measure3():
 # NOTE: Change the value of noOfTotalClasses, noOfTrainingVectors
 # and noOfTestingVectors in actual use.
 #: Total number of classes.
-noOfTotalClasses = 6
+noOfTotalClasses = 5
 #: Total number of vectors available for one class.
-noOfTotalVectors = 150
+noOfTotalVectors = 250
 #: For training purposes for one class use first `noOfTrainingVectors` vectors.
-noOfTrainingVectors = 100
+noOfTrainingVectors = 96
 #: For testing purposes for one class use first `noOfTestingVectors` vectors.
 noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
 # TODO: Automate this. Extract this data from first line of dataset.
 #: Each vector contains `noOfFeatures` features.
 noOfFeatures = 31
 #: This contains the no of classifiers defined below
-noOfClassifiers = 5
+noOfClassifiers = 4
 #: This contains the path for the dataset.
+fileName = "IIITBh-Small.csv"
 datasetPath = os.path.normpath(os.getcwd() + os.sep + os.pardir)
-# datasetPath = datasetPath + os.sep + "DSL-StrongPasswordData.csv"
-datasetPath = datasetPath + os.sep + "OURdata.csv"
+datasetPath = datasetPath + os.sep + fileName
 max_training = 0
 max_scores = []
 trainingData_start = 2
 trainingData_end = trainingData_start + noOfTrainingVectors
+
+
+noOfInputNodes = noOfFeatures
+# The number of hidden nodes.
+noOfHiddenNodes = 25
+# The number of output nodes is equal to the number of classes
+noOfOutputNodes = noOfTotalClasses
+
 
 # Metrics for saving state of classifier at maximum TPR & Accuracy
 #: Maximum TPR of each classifier
@@ -393,26 +388,24 @@ accuracyMatrix = [[0 for x in range(noOfTrainingVectors)] for x in range(noOfCla
 maxTPR_Z = [[0 for x in range(noOfTestingVectors)] for x in range(noOfClassifiers)]
 #: maxAcc_Z contains the predicted values when the accuracy is maximum
 maxAcc_Z = [[0 for x in range(noOfTestingVectors)] for x in range(noOfClassifiers)]
-#: maxTPR_test_y contains the test targets values when the TPR is maximum
+#: maxTPR_test_y contains the targets values for testing data when the TPR is maximum
 maxTPR_test_y = [[0 for x in range(noOfTestingVectors)] for x in range(noOfClassifiers)]
-#: maxAcc_test_y contains the test targets when the accuracy is maximum
+#: maxAcc_test_y contains the targets values for testing data when the accuracy is maximum
 maxAcc_test_y = [[0 for x in range(noOfTestingVectors)] for x in range(noOfClassifiers)]
 
 class_names = getClassNames()
-labels = ['SVC(linear)', 'LinearSVC', 'SVC(rbf)', 'SVC(poly)', 'NuSVC(rbf)']
+labels = ['SVC(linear)', 'SVC(rbf)', 'Neural(sigmoid)', 'Neural(adam)']
 #: These are the column names of the matrix filled by fillCnfValues()
-columnNames = ["TP", "FN", "FP", "TN", "TPR", "TNR", "FNR", "FPR", "Accuracy"]
+columnNames = ["TP", "FN", "FP", "TN", "TPR", "TNR", "FNR", "FPR", "Precision"]
 
 
-# C is SVM Regularization parameter
-trainAndTest(C=1.0)
-
+trainAndTest()
 # ==========================
 # MEASUREMENT OF PERFORMANCE
 # ==========================
-# Measure 1: Print maximum TPR & accuracy of the model.
+# Measure 1: Print maximum TPR & precision of the model.
 measure1()
-# Measure 2: Plot the TPR vs training size and Accuracy vs training size.
+# Measure 2: Plot the TPR vs training size and Precision vs training size.
 measure2()
-# Measure 3: Plot the confusion matrix for each classifier when the TPR is the most.
+# Measure 3: Plot the confusion matrix for each classifier when the precision is the most.
 measure3()
