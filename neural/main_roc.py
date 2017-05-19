@@ -3,6 +3,26 @@ import numpy as np
 # import matplotlib.pyplot as plt
 import csv
 from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import label_binarize
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc
+
+
+def convert_numerical_train(labels):
+	x = []
+	for i in range(noOfTotalClasses):
+		for j in range(noOfTrainingVectors):
+			# x.append(int(labels[(i*noOfTotalVectors) + j][-2:]))
+			x.append(i)
+	return x
+
+def convert_numerical_test(labels):
+	x = []
+	for i in range(noOfTotalClasses):
+		for j in range(noOfTestingVectors):
+			# x.append(int(labels[(i*noOfTotalVectors) + j][-2:]))
+			x.append(i)
+	return x
 
 def load_trainingData():
 	"""
@@ -79,10 +99,10 @@ noOfTotalClasses = 12
 # Total number of vectors available for one class.
 noOfTotalVectors = 150
 # For training purposes for one class use first `noOfTrainingVectors` vectors.
-noOfTrainingVectors = 100
+noOfTrainingVectors = 96
 # For testing purposes for one class use first `noOfTestingVectors` vectors.
 # noOfTestingVectors = noOfTotalVectors - noOfTrainingVectors
-noOfTestingVectors = 50
+noOfTestingVectors = 54
 # Each vector contains `noOfFeatures` features.
 noOfFeatures = 31
 # This contains the path for the dataset.
@@ -93,7 +113,7 @@ datasetPath = datasetPath + os.sep + "OURData.csv"
 
 noOfInputNodes = noOfFeatures
 # The number of Hidden nodes is taken as (2*P)/3, where P is the number of the input nodes
-noOfHiddenNodes = 25
+noOfHiddenNodes = 15
 # The number of output nodes is equal to the number of classes
 noOfOutputNodes = noOfTotalClasses
 
@@ -102,17 +122,29 @@ noOfOutputNodes = noOfTotalClasses
 X,y = load_trainingData()
 test_X,test_y = load_testingData()
 
-sgd_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
-		activation = "tanh", solver = "sgd", max_iter = 1800, learning_rate = "adaptive", 
-		learning_rate_init=0.01, random_state=0, alpha=0.01)
-adam_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
-		activation = "tanh", solver = "adam", max_iter = 1000, random_state=0, alpha=0.001)
-lbfgs_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
-		activation = "tanh", solver = "lbfgs", max_iter = 1000)
+y = convert_numerical_train(y)
+test_y = convert_numerical_test(test_y)
 
-sgd_clf.fit(X,y)
-adam_clf.fit(X,y)
-lbfgs_clf.fit(X,y)
+y = np.array(y)
+test_y = np.array(test_y)
+
+# binarize output labels
+y_binarized = label_binarize(y, classes=range(noOfTotalClasses))
+test_y_binarized = label_binarize(test_y, classes=range(noOfTotalClasses))
+
+
+
+sgd_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
+		activation = "tanh", solver = "sgd", max_iter = 1800, learning_rate = "adaptive", learning_rate_init="0.01",
+		random_state=0)
+adam_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
+		activation = "tanh", solver = "adam", max_iter = 1000, random_state=0)
+lbfgs_clf = MLPClassifier(hidden_layer_sizes = (noOfInputNodes, noOfHiddenNodes, noOfOutputNodes), 
+		activation = "tanh", solver = "lbfgs", max_iter = 1000, random_state=0)
+
+sgd = sgd_clf.fit(X,y_binarized)
+adam = adam_clf.fit(X,y_binarized)
+lbgs = lbfgs_clf.fit(X,y_binarized)
 
 for i, clf in enumerate((sgd_clf, adam_clf, lbfgs_clf)):
 	if(i==0):
@@ -127,8 +159,57 @@ for i, clf in enumerate((sgd_clf, adam_clf, lbfgs_clf)):
 	similar = 0
 	for j in xrange(0, noOfTestingVectors*noOfTotalClasses):
 		# print j, Z[j], test_y[j]
-		if Z[j]==test_y[j]:
+		if (Z[j]==test_y_binarized[j]).all():
 			similar+=1
 	score = (similar/float(noOfTestingVectors*noOfTotalClasses))*100
 	print "Performance of classifier:", score,"%"
 	print ""
+
+y_score = adam.predict_proba(test_X)
+# print y_score
+print y_score.shape
+
+fpr = dict()
+tpr = dict()
+roc_auc = dict()
+for i in range(noOfTotalClasses):
+    fpr[i], tpr[i], thresholds = roc_curve(test_y_binarized[:, i], y_score[:, i])
+    print fpr[i], tpr[i], thresholds
+    roc_auc[i] = auc(fpr[i], tpr[i])
+
+
+plt.figure()
+lw = 2
+plt.plot(fpr[0], tpr[0], color='black',
+         lw=lw, label='subject0 (area = %0.2f)' % roc_auc[0])
+plt.plot(fpr[1], tpr[1], color='blue',
+         lw=lw, label='subject1 curve (area = %0.2f)' % roc_auc[1])
+plt.plot(fpr[2], tpr[2], color='darkorange',
+         lw=lw, label='subject2 curve (area = %0.2f)' % roc_auc[2])
+plt.plot(fpr[3], tpr[3], color='pink',
+         lw=lw, label='subject3 curve (area = %0.2f)' % roc_auc[3])
+plt.plot(fpr[4], tpr[4], color='yellow',
+         lw=lw, label='subject4 curve (area = %0.2f)' % roc_auc[4])
+plt.plot(fpr[5], tpr[5], color='red',
+         lw=lw, label='subject5 curve (area = %0.2f)' % roc_auc[5])
+plt.plot(fpr[6], tpr[6], color='violet',
+         lw=lw, label='subject6 curve (area = %0.2f)' % roc_auc[6])
+plt.plot(fpr[7], tpr[7], color='green',
+         lw=lw, label='subject7 curve (area = %0.2f)' % roc_auc[7])
+plt.plot(fpr[8], tpr[8], color='magenta',
+         lw=lw, label='subject8 curve (area = %0.2f)' % roc_auc[8])
+plt.plot(fpr[9], tpr[9], color='cyan',
+         lw=lw, label='subject9 curve (area = %0.2f)' % roc_auc[9])
+plt.plot(fpr[10], tpr[10], color='grey',
+         lw=lw, label='subject10 curve (area = %0.2f)' % roc_auc[10])
+plt.plot(fpr[11], tpr[11], color='brown',
+         lw=lw, label='subject11 curve (area = %0.2f)' % roc_auc[11])
+
+plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic')
+plt.legend(loc="lower right")
+plt.show()
