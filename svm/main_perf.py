@@ -394,7 +394,7 @@ maxTPR_test_y = [[0 for x in range(noOfTestingVectors)] for x in range(noOfClass
 maxAcc_test_y = [[0 for x in range(noOfTestingVectors)] for x in range(noOfClassifiers)]
 
 class_names = getClassNames()
-labels = ['SVC(linear)', 'SVC(rbf)', 'Neural(sigmoid)', 'Neural(adam)']
+labels = ['SVC(linear)', 'SVC(rbf)', 'Neural(SGD)', 'Neural(adam)']
 #: These are the column names of the matrix filled by fillCnfValues()
 columnNames = ["TP", "FN", "FP", "TN", "TPR", "TNR", "FNR", "FPR", "Precision"]
 
