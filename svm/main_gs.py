@@ -93,7 +93,7 @@ for train_index, test_index in ss.split(X, y):
 # Set the parameters by cross-validation
 gamma_parameters = [1e-2, 1e-1, 1e-0, 5e-2, 5e-1, 5e-0]
 C_parameters = list(np.arange(1, 1000, 100))
-tuned_parameters_lin = [{'kernel': ['linear'], 'gamma': gamma_parameters, 'C': C_parameters}]
+tuned_parameters_lin = [{'kernel': ['linear'], 'C': C_parameters}]
 tuned_parameters_rbf = [{'kernel': ['rbf'], 'gamma': gamma_parameters, 'C': C_parameters}]
 # tuned_parameters_sgm = [{'kernel': ['sigmoid'], 'gamma': gamma_parameters, 'C': C_parameters}]
 score = 'precision_macro'
